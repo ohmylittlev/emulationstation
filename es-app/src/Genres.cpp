@@ -65,6 +65,8 @@ void Genres::init()
 				g->nom_es = value;
 			else if (name == "nom_pt")
 				g->nom_pt = value;
+            else if (name == "nom_zh")
+                g->nom_zh = value;
 			else if (name == "altname")
 				g->altNames.push_back(value);
 		}
@@ -121,7 +123,9 @@ void Genres::init()
 
 			if (!genre->nom_pt.empty())
 				mAllGenresNames[Utils::String::toUpper(genre->parent->nom_pt) + " / " + Utils::String::toUpper(genre->nom_pt)] = genre->id;
-		
+
+            if (!genre->nom_zh.empty())
+				mAllGenresNames[Utils::String::toUpper(genre->parent->nom_zh) + " / " + Utils::String::toUpper(genre->nom_zh)] = genre->id;
 
 			for (auto altName : genre->altNames)
 				mAllGenresNames[Utils::String::toUpper(altName)] = genre->id;
@@ -142,6 +146,9 @@ void Genres::init()
 
 			if (!genre->nom_pt.empty())
 				mAllGenresNames[Utils::String::toUpper(genre->nom_pt)] = genre->id;
+
+            if (!genre->nom_zh.empty())
+				mAllGenresNames[Utils::String::toUpper(genre->nom_zh)] = genre->id;
 
 			for (auto altName : genre->altNames)
 				mAllGenresNames[Utils::String::toUpper(altName)] = genre->id;
@@ -167,6 +174,9 @@ void Genres::init()
 
 			if (!genre->nom_pt.empty() && mAllGenresNames.find(Utils::String::toUpper(genre->nom_pt)) == mAllGenresNames.cend())
 				mAllGenresNames[Utils::String::toUpper(genre->nom_pt)] = genre->id;
+
+            if (!genre->nom_zh.empty() && mAllGenresNames.find(Utils::String::toUpper(genre->nom_zh)) == mAllGenresNames.cend())
+				mAllGenresNames[Utils::String::toUpper(genre->nom_zh)] = genre->id;
 		}
 	}
 }
@@ -196,6 +206,8 @@ std::string& GameGenre::getLocalizedName()
 			locale = 3;
 		else if (lang == "es")
 			locale = 4;
+        else if (lang == "zh")
+            locale = 5;
 		else
 			locale = 0;
 	}
@@ -209,8 +221,11 @@ std::string& GameGenre::getLocalizedName()
 	if (locale == 3 && !nom_de.empty())
 		return nom_de;
 
-	if (locale == 4 && nom_es.empty())
+	if (locale == 4 && !nom_es.empty())
 		return nom_es;
+
+    if (locale == 5 && !nom_zh.empty())
+        return nom_zh;
 
 	return nom_en;
 }

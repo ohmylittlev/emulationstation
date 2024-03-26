@@ -44,6 +44,7 @@ public:
 	void onSizeChanged() override;
 	std::vector<HelpPrompt> getHelpPrompts() override;	
 	static void openQuitMenu_batocera_static(Window *window, bool quickAccessMenu = false, bool animate = true); // batocera
+    static void openQuitMenu_batocera_static_with_selected(Window *window, bool quickAccessMenu = false, bool animate = true, bool selectPauseEntry=false); // batocera
 
 	static void popSystemConfigurationGui(Window* mWindow, SystemData *systemData);
 	static void popGameConfigurationGui(Window* mWindow, FileData* fileData);

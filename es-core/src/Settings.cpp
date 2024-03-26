@@ -6,8 +6,11 @@
 #include "SystemConf.h"
 #include "platform.h"
 #include <pugixml.hpp>
+#include <cmath>
 #include <algorithm>
 #include <vector>
+#include <iostream>
+#include <sstream>
 #include "utils/StringUtil.h"
 #include "../es-app/src/ApiSystem.h"
 
@@ -40,6 +43,7 @@ std::vector<const char*> settings_dont_save {
 	{ "ScreenOffsetY" },
 	{ "ScreenRotate" },
 	{ "MonitorID" },
+    { "AvailableSystems" },
 #ifdef _ENABLEEMUELEC
 	{ "LogPath" },
 #endif
@@ -106,6 +110,9 @@ void Settings::setDefaults()
 	mBoolMap["VSync"] = true;
 	mStringMap["FolderViewMode"] = "never";
 	mStringMap["HiddenSystems"] = "";
+
+	// cloud game folders
+	mStringMap["SyncEnabledSystems"] = "";
 
 	mBoolMap["FirstJoystickOnly"] = false;
 #ifdef _ENABLEEMUELEC
@@ -393,34 +400,77 @@ bool Settings::saveFile()
 
 void Settings::loadFile()
 {
-	const std::string path = Utils::FileSystem::getEsConfigPath() + "/es_settings.cfg";
-	if(!Utils::FileSystem::exists(path))
-		return;
-
-	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(path.c_str());
-	if(!result)
+	// load es_settings.cfg
 	{
-		LOG(LogError) << "Could not parse Settings file!\n   " << result.description();
-		return;
+		const std::string path = Utils::FileSystem::getEsConfigPath() + "/es_settings.cfg";
+		if(!Utils::FileSystem::exists(path))
+			return;
+
+		pugi::xml_document doc;
+		pugi::xml_parse_result result = doc.load_file(path.c_str());
+		if(!result)
+		{
+			LOG(LogError) << "Could not parse Settings file!\n   " << result.description();
+			return;
+		}
+
+		pugi::xml_node root = doc;
+
+		// Batocera use a <config> root element
+		pugi::xml_node config = doc.child("config");
+		if (config)
+			root = config;
+
+		for(pugi::xml_node node = root.child("bool"); node; node = node.next_sibling("bool"))
+			setBool(node.attribute("name").as_string(), node.attribute("value").as_bool());
+		for(pugi::xml_node node = root.child("int"); node; node = node.next_sibling("int"))
+			setInt(node.attribute("name").as_string(), node.attribute("value").as_int());
+		for(pugi::xml_node node = root.child("float"); node; node = node.next_sibling("float"))
+			setFloat(node.attribute("name").as_string(), node.attribute("value").as_float());
+		for(pugi::xml_node node = root.child("string"); node; node = node.next_sibling("string"))
+			setString(node.attribute("name").as_string(), node.attribute("value").as_string());
 	}
+	// Load available systems
+	{
+		const std::string path = Utils::FileSystem::getEsConfigPath() + "/es_systems.cfg";
+		if(!Utils::FileSystem::exists(path))
+			return;
 
-	pugi::xml_node root = doc;
+		pugi::xml_document doc;
+		pugi::xml_parse_result result = doc.load_file(path.c_str());
+		if(!result)
+		{
+			LOG(LogError) << "Could not parse Settings file!\n   " << result.description();
+			return;
+		}
 
-	// Batocera use a <config> root element
-	pugi::xml_node config = doc.child("config");
-	if (config)
-		root = config;
+		pugi::xml_node root = doc;
+		pugi::xml_node systemList = doc.child("systemList");
+		if (systemList)
+			root = systemList;
 
-	for(pugi::xml_node node = root.child("bool"); node; node = node.next_sibling("bool"))
-		setBool(node.attribute("name").as_string(), node.attribute("value").as_bool());
-	for(pugi::xml_node node = root.child("int"); node; node = node.next_sibling("int"))
-		setInt(node.attribute("name").as_string(), node.attribute("value").as_int());
-	for(pugi::xml_node node = root.child("float"); node; node = node.next_sibling("float"))
-		setFloat(node.attribute("name").as_string(), node.attribute("value").as_float());
-	for(pugi::xml_node node = root.child("string"); node; node = node.next_sibling("string"))
-		setString(node.attribute("name").as_string(), node.attribute("value").as_string());
-
+		std::stringstream ss;
+		int i = 0;
+		for(pugi::xml_node node = root.child("system"); node; node = node.next_sibling("system"))
+		{
+			pugi::xml_node ch = node.child("name");
+			if (i != 0)
+			{
+				ss << ";" << ch.child_value();
+			}
+			else
+			{
+				ss << ch.child_value();
+			}
+			i++;
+		}
+		setString("AvailableSystems", ss.str());
+	}
+    // Load boot videos
+    {
+        loadBootVideos(Utils::FileSystem::getEsConfigPath() + "/resources/bootvideos/");
+        loadBootVideos("/storage/roms/BOOTVIDEOS/");
+    }
 	mWasChanged = false;
 }
 
@@ -452,6 +502,13 @@ SETTINGS_GETSET(int, mIntMap, getInt, setInt, 0);
 SETTINGS_GETSET(float, mFloatMap, getFloat, setFloat, 0.0f);
 //SETTINGS_GETSET(const std::string&, mStringMap, getString, setString, mEmptyString);
 
+std::string Settings::getBootVideoPath(const std::string &name) {
+    if (mBootvideoMap.find(name) == mBootvideoMap.cend())
+		return mEmptyString;
+
+	return mBootvideoMap[name];
+}
+
 std::string Settings::getString(const std::string& name)
 {
 	if (mStringMap.find(name) == mStringMap.cend())
@@ -476,4 +533,53 @@ bool Settings::setString(const std::string& name, const std::string& value)
 	}
 
 	return false;
+}
+
+void Settings::loadBootVideos(const std::string &path)
+{
+    if(!Utils::FileSystem::exists(path))
+        return;
+    int width = 1280;
+    int height = 720;
+    if(!SystemConf::getInstance()->get("global.screen.width").empty())
+    {
+        width = stoi(SystemConf::getInstance()->get("global.screen.width"));
+    }
+    if(!SystemConf::getInstance()->get("global.screen.height").empty())
+    {
+        height = stoi(SystemConf::getInstance()->get("global.screen.height"));
+    }
+    float ratio = floorf(width * 1.0 / height * 100) / 100;
+    std::string subPath = "4_3";
+    if (ratio == 1.00f)
+    {
+        subPath = "1_1";
+    } else if (ratio == 1.77f)
+    {
+        subPath = "16_9";
+    } else if (ratio == 1.50f)
+    {
+        subPath = "3_2";
+    }
+    auto fileList = Utils::FileSystem::getDirectoryFiles(path);
+    for (auto & file : fileList) {
+        if (Utils::FileSystem::isDirectory(file.path))
+        {
+            if (Utils::FileSystem::getFileName(file.path) == subPath)
+            {
+                auto innerFileList = Utils::FileSystem::getDirectoryFiles(file.path);
+                for (auto & innerFile : innerFileList)
+                {
+                    if(!Utils::FileSystem::isDirectory(innerFile.path))
+                    {
+                        std::string name = Utils::FileSystem::getFileName(innerFile.path);
+                        mBootvideoMap[name] = innerFile.path;
+                    }
+                }
+            }
+        } else {
+            std::string name = Utils::FileSystem::getFileName(file.path);
+            mBootvideoMap[name] = file.path;
+        }
+    }
 }

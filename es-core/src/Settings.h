@@ -25,6 +25,7 @@ public:
 	int getInt(const std::string& name);
 	float getFloat(const std::string& name);
 	std::string getString(const std::string& name);
+    std::string getBootVideoPath(const std::string& name);
 
 	bool setBool(const std::string& name, bool value);
 	bool setInt(const std::string& name, int value);
@@ -32,6 +33,7 @@ public:
 	bool setString(const std::string& name, const std::string& value);
 
 	std::map<std::string, std::string>& getStringMap() { return mStringMap; }
+    std::map<std::string, std::string>& getBootvideoMap() { return mBootvideoMap; }
 
 	static bool DebugText;
 	static bool DebugImage;
@@ -54,6 +56,10 @@ private:
 
 	//Clear everything and load default values.
 	void setDefaults();
+
+    // const maps
+    std::map<std::string, std::string> mBootvideoMap;
+    void loadBootVideos(const std::string &path);
 
 	std::map<std::string, bool> mBoolMap;
 	std::map<std::string, int> mIntMap;

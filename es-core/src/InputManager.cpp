@@ -316,6 +316,24 @@ bool InputManager::parseEvent(const SDL_Event& ev, Window* window)
 	return false;
 }
 
+bool InputManager::parseEventDuringPlayingVideo(const SDL_Event& ev)
+{
+	switch (ev.type) {
+        case SDL_JOYBUTTONDOWN: {
+            InputConfig* inputConfig = getInputConfigByDevice(ev.jbutton.which);
+            Input input(ev.jbutton.which, TYPE_BUTTON, ev.jbutton.button, ev.jbutton.state == SDL_PRESSED, false);
+            if (inputConfig->isMappedTo("start", input) && input.value)
+            {
+                SDL_Event* quit = new SDL_Event();
+                quit->type = SDL_QUIT;
+                SDL_PushEvent(quit);
+            }
+            return true;
+        }
+    }
+	return false;
+}
+
 bool InputManager::tryLoadInputConfig(std::string path, InputConfig* config, bool allowApproximate)
 {
 	pugi::xml_node configNode(NULL);

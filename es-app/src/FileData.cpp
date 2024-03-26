@@ -211,6 +211,11 @@ const bool FileData::getFavorite()
 	return getMetadata(MetaDataId::Favorite) == "true";
 }
 
+const bool FileData::getRunOnBoot()
+{
+    return SystemConf::getInstance()->get("global.bootgame.path") == getFullPath();
+}
+
 const bool FileData::getHidden()
 {
 	return getMetadata(MetaDataId::Hidden) == "true";

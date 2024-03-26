@@ -21,6 +21,7 @@ private:
 	static AudioManager* sInstance;
 	
 	Mix_Music* mCurrentMusic; // batocera
+    bool musicPaused;
 	void getMusicIn(const std::string &path, std::vector<std::string>& all_matching_files); // batocera
 	void playMusic(std::string path);
 	static void musicEnd_callback();	// batocera
@@ -49,6 +50,8 @@ public:
 	// batocera
 	void playRandomMusic(bool continueIfPlaying = true);
 	void stopMusic(bool fadeOut=true);
+    void pauseMusic();
+    void resumeMusic();
 	
 	inline const std::string getSongName() const { return mCurrentSong; }
 
@@ -56,6 +59,7 @@ public:
 	void resetSongNameChangedFlag() { mSongNameChanged = false; }
 	
 	inline bool isSongPlaying() { return (mCurrentMusic != NULL); }
+    inline bool isMusicPaused() { return musicPaused; }
 
 	void changePlaylist(const std::shared_ptr<ThemeData>& theme, bool force = false);
 

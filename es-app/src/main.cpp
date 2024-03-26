@@ -321,6 +321,19 @@ void signalHandler(int signum)
 
 void playVideo()
 {
+    std::string bootVideoName = SystemConf::getInstance()->get("global.bootvideo.name");
+    if(SystemConf::getInstance()->get("global.bootvideo.flag") != "0" || bootVideoName.empty() || bootVideoName == "None")
+    {
+        SystemConf::getInstance()->set("global.bootvideo.flag", "1");
+        SystemConf::getInstance()->saveSystemConf();
+        return;
+    }
+
+    gPlayVideo = Settings::getInstance()->getBootVideoPath(bootVideoName);
+
+    SystemConf::getInstance()->set("global.bootvideo.flag", "1");
+    SystemConf::getInstance()->saveSystemConf();
+
 	ApiSystem::getInstance()->setReadyFlag(false);
 	Settings::getInstance()->setBool("AlwaysOnTop", true);
 
@@ -355,6 +368,7 @@ void playVideo()
 	int lastTime = SDL_GetTicks();
 	int totalTime = 0;
 
+    bool vidStarted = false;
 	while (!exitLoop)
 	{
 		SDL_Event event;
@@ -363,22 +377,33 @@ void playVideo()
 		{
 			do
 			{
+                TRYCATCH("InputManager::parseEvent", InputManager::getInstance()->parseEventDuringPlayingVideo(event));
 				if (event.type == SDL_QUIT)
-					return;
-			} 
+                {
+                    exitLoop = true;
+                    break;
+                }
+			}
 			while (SDL_PollEvent(&event));
 		}
 
 		int curTime = SDL_GetTicks();
 		int deltaTime = curTime - lastTime;
+        lastTime = curTime;
 
 		if (vid.isPlaying())
 		{
+            vidStarted = true;
 			totalTime += deltaTime;
 
-			if (gPlayVideoDuration > 0 && totalTime > gPlayVideoDuration * 100)
-				break;
+			if (gPlayVideoDuration > 0 && totalTime > gPlayVideoDuration)
+                break;
 		}
+        else
+        {
+            if (vidStarted)
+                break;
+        }
 
 		Transform4x4f transform = Transform4x4f::Identity();
 		vid.update(deltaTime);
@@ -395,6 +420,12 @@ void playVideo()
 
 void launchStartupGame()
 {
+    if (SystemConf::getInstance()->get("global.bootgame.flag") != "0")
+        return;
+
+    SystemConf::getInstance()->set("global.bootgame.flag", "1");
+    SystemConf::getInstance()->saveSystemConf();
+
 	auto gamePath = SystemConf::getInstance()->get("global.bootgame.path");
 	if (gamePath.empty() || !Utils::FileSystem::exists(gamePath))
 		return;
@@ -435,11 +466,12 @@ int main(int argc, char* argv[])
 	if(!verifyHomeFolderExists())
 		return 1;
 
-	if (!gPlayVideo.empty())
-	{
-		playVideo();
-		return 0;
-	}
+    // Initialize input
+	InputConfig::AssignActionButtons();
+	InputManager::getInstance()->init();
+	SDL_StopTextInput();
+
+    playVideo();
 
 	//start the logger
 	Log::setupReportingLevel();
@@ -453,7 +485,7 @@ int main(int argc, char* argv[])
 	setLocale(argv[0]);	
 
 	// Run boot game, before Window Create for linux
-	launchStartupGame();
+    launchStartupGame();
 
 	// metadata init
 	Genres::init();
@@ -500,10 +532,8 @@ int main(int argc, char* argv[])
 		BrightnessControl::getInstance()->setBrightness(stoi(sysbright));
 	}
 
-	// Initialize input
-	InputConfig::AssignActionButtons();
-	InputManager::getInstance()->init();
-	SDL_StopTextInput();
+    // reinit
+    InputManager::getInstance()->init();
 
 	NetworkThread* nthread = new NetworkThread(&window);
 	HttpServerThread httpServer(&window);

@@ -89,6 +89,7 @@ public:
 	void setCore(const std::string value);
 	void setEmulator(const std::string value);
 
+    virtual const bool getRunOnBoot();
 	virtual const bool getHidden();
 	virtual const bool getFavorite();
 	virtual const bool getKidGame();

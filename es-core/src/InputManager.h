@@ -44,6 +44,7 @@ public:
 	std::vector<InputConfig*> getInputConfigs();
 
 	bool parseEvent(const SDL_Event& ev, Window* window);
+    bool parseEventDuringPlayingVideo(const SDL_Event& ev);
 
 	std::string configureEmulators();
 

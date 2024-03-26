@@ -90,8 +90,29 @@
 #define fake_gettext_glversion		_("VERSION")
 #define fake_gettext_glslversion	_("SHADERS")
 
+#define fake_gettext_screenratio_coreprovided   _("Core provided")
+#define fake_gettext_screenratio_config         _("Config")
+#define fake_gettext_screenratio_custom         _("Custom")
+#define fake_gettext_screenratio_squarepixcel   _("Square pixel")
+
 #define gettext_controllers_settings				_("CONTROLLER SETTINGS")
 #define gettext_controllers_and_bluetooth_settings  _("CONTROLLER & BLUETOOTH SETTINGS")
+
+#define fake_gettext_input_dpad_up                  _("D-PAD UP")
+#define fake_gettext_input_dpad_down                _("D-PAD DOWN")
+#define fake_gettext_input_dpad_left                _("D-PAD LEFT")
+#define fake_gettext_input_dpad_right               _("D-PAD RIGHT")
+#define fake_gettext_input_btn_east                 _("BUTTON A / EAST")
+#define fake_gettext_input_btn_south                _("BUTTON B / SOUTH")
+#define fake_gettext_input_btn_north                _("BUTTON X / NORTH")
+#define fake_gettext_input_btn_west                 _("BUTTON Y / WEST")
+#define fake_gettext_input_l1                       _("LEFT SHOULDER")
+#define fake_gettext_input_l2                       _("LEFT TRIGGER")
+#define fake_gettext_input_l3                       _("LEFT THUMB")
+#define fake_gettext_input_r1                       _("RIGHT SHOULDER")
+#define fake_gettext_input_r2                       _("RIGHT TRIGGER")
+#define fake_gettext_input_r3                       _("RIGHT THUMB")
+#define fake_gettext_input_hotkey                   _("HOTKEY ENABLE")
 
 // Windows build does not have bluetooth support, so affect the label for Windows
 #if WIN32
@@ -840,6 +861,31 @@ void GuiMenu::openSystemSettings_batocera()
 	tmFormat->setState(Settings::getInstance()->getBool("ClockMode12"));
 	s->addWithLabel(_("SHOW CLOCK IN 12-HOUR FORMAT"), tmFormat);
 	tmFormat->setOnChangedCallback([tmFormat] { Settings::getInstance()->setBool("ClockMode12", tmFormat->getState()); });
+
+    // personalization
+    s->addGroup(_("PERSONALIZATION"));
+    auto bootvideos = std::make_shared<OptionListComponent<std::string> >(mWindow, _("BOOT VIDEOS"), false);
+    std::string currentBootVideo = SystemConf::getInstance()->get("global.bootvideo.name");
+    bootvideos->add(_("None"), "None", currentBootVideo == "None");
+    for (auto & iter : Settings::getInstance()->getBootvideoMap())
+    {
+        std::string k = iter.first;
+        bootvideos->add(k, k, currentBootVideo == k);
+    }
+    s->addWithLabel(_("BOOT VIDEOS"), bootvideos);
+    s->addSaveFunc([bootvideos] {
+        if (bootvideos->changed())
+        {
+            std::string selected = bootvideos->getSelected();
+            SystemConf::getInstance()->set("global.bootvideo.name", selected);
+            if (selected == "None") {
+                SystemConf::getInstance()->set("global.bootvideo.path", "");
+            } else {
+                SystemConf::getInstance()->set("global.bootvideo.path", Settings::getInstance()->getBootVideoPath(selected));
+            }
+            SystemConf::getInstance()->saveSystemConf();
+        }
+    });
 
         s->addGroup(_("AUTHENTICATION"));
         bool rotateRootPassEnabled = SystemConf::getInstance()->getBool("rotate.root.password");
@@ -3944,98 +3990,173 @@ void GuiMenu::openNetworkSettings_batocera(bool selectWifiEnable, bool selectAdh
 
 	s->addGroup(_("CLOUD SERVICES"));
 
-       auto enable_syncthing = std::make_shared<SwitchComponent>(mWindow);
-                bool syncthingEnabled = SystemConf::getInstance()->get("syncthing.enabled") == "1";
-                enable_syncthing->setState(syncthingEnabled);
-                s->addWithLabel(_("ENABLE SYNCTHING"), enable_syncthing);
-                enable_syncthing->setOnChangedCallback([enable_syncthing] {
-                        if (enable_syncthing->getState() == false) {
-                                runSystemCommand("systemctl stop syncthing", "", nullptr);
-                        } else {
-                                runSystemCommand("systemctl start syncthing", "", nullptr);
-                        }
-                bool syncthingenabled = enable_syncthing->getState();
-                SystemConf::getInstance()->set("syncthing.enabled", syncthingenabled ? "1" : "0");
+        auto enable_sync = std::make_shared<SwitchComponent>(mWindow);
+                bool syncEnabled = SystemConf::getInstance()->get("baiducloud.sync") == "1";
+                enable_sync->setState(syncEnabled);
+                s->addWithLabel(_("CLOUD SYNC"), enable_sync);
+				enable_sync->setOnChangedCallback([enable_sync] {
+                bool syncEnabled = enable_sync->getState();
+                SystemConf::getInstance()->set("baiducloud.sync", syncEnabled ? "1" : "0");
                                 SystemConf::getInstance()->saveSystemConf();
                 });
 
-       auto mount_cloud = std::make_shared<SwitchComponent>(mWindow);
-                bool mntcloudEnabled = SystemConf::getInstance()->get("clouddrive.mounted") == "1";
-                mount_cloud->setState(mntcloudEnabled);
-                s->addWithLabel(_("MOUNT CLOUD DRIVE"), mount_cloud);
-                mount_cloud->setOnChangedCallback([mount_cloud] {
-                        if (mount_cloud->getState() == false) {
-                                runSystemCommand("rclonectl unmount", "", nullptr);
-                        } else {
-                                runSystemCommand("rclonectl mount", "", nullptr);
-                        }
-                bool cloudenabled = mount_cloud->getState();
-                SystemConf::getInstance()->set("clouddrive.mounted", cloudenabled ? "1" : "0");
+        auto enable_syncBios = std::make_shared<SwitchComponent>(mWindow);
+                bool syncBiosEnabled = SystemConf::getInstance()->get("baiducloud.syncBios") == "1";
+                enable_syncBios->setState(syncBiosEnabled);
+                s->addWithLabel(_("SYNC BIOS"), enable_syncBios);
+				enable_syncBios->setOnChangedCallback([enable_syncBios] {
+                bool syncBiosEnabled = enable_syncBios->getState();
+                SystemConf::getInstance()->set("baiducloud.syncBios", syncBiosEnabled ? "1" : "0");
                                 SystemConf::getInstance()->saveSystemConf();
                 });
 
-	s->addGroup(_("VPN SERVICES"));
+        auto enable_syncBgm = std::make_shared<SwitchComponent>(mWindow);
+                bool syncBgmEnabled = SystemConf::getInstance()->get("baiducloud.syncBgm") == "1";
+                enable_syncBgm->setState(syncBgmEnabled);
+                s->addWithLabel(_("SYNC BGM"), enable_syncBgm);
+				enable_syncBgm->setOnChangedCallback([enable_syncBgm] {
+                bool syncBgmEnabled = enable_syncBgm->getState();
+                SystemConf::getInstance()->set("baiducloud.syncBgm", syncBgmEnabled ? "1" : "0");
+                                SystemConf::getInstance()->saveSystemConf();
+                });
 
-	const std::string wireguardConfigFile = "/storage/.config/wireguard/wg0.conf";
-	if (Utils::FileSystem::exists(wireguardConfigFile)) {
-		auto wireguard = std::make_shared<SwitchComponent>(mWindow);
-		bool wgUp = SystemConf::getInstance()->get("wireguard.up") == "1";
-		wireguard->setState(wgUp);
-		s->addWithLabel(_("WIREGUARD VPN"), wireguard);
-		wireguard->setOnChangedCallback([wireguard, wireguardConfigFile] {
-			if (wireguard->getState() == false) {
-				runSystemCommand("wg-quick down " + wireguardConfigFile, "", nullptr);
-				runSystemCommand("systemctl stop connman-vpn", "", nullptr);
-			} else {
-				runSystemCommand("systemctl start connman-vpn", "", nullptr);
-				runSystemCommand("wg-quick up " + wireguardConfigFile, "", nullptr);
-			}
-			SystemConf::getInstance()->set("wireguard.up", wireguard->getState() ? "1" : "0");
-			SystemConf::getInstance()->saveSystemConf();
-		});
-	}
+//        auto enable_syncPorts = std::make_shared<SwitchComponent>(mWindow);
+//                bool syncPortsEnabled = SystemConf::getInstance()->get("baiducloud.syncPorts") == "1";
+//                enable_syncPorts->setState(syncPortsEnabled);
+//                s->addWithLabel(_("SYNC PORTS"), enable_syncPorts);
+//				enable_syncPorts->setOnChangedCallback([enable_syncPorts] {
+//                bool syncPortsEnabled = enable_syncPorts->getState();
+//                SystemConf::getInstance()->set("baiducloud.syncPorts", syncPortsEnabled ? "1" : "0");
+//                                SystemConf::getInstance()->saveSystemConf();
+//                });
 
-	auto tailscale = std::make_shared<SwitchComponent>(mWindow);
-	bool tsUp = SystemConf::getInstance()->get("tailscale.up") == "1";
-	tailscale->setState(tsUp);
-	s->addWithLabel(_("TAILSCALE VPN"), tailscale);
-	tailscale->setOnChangedCallback([tailscale] {
-  		bool tsEnabled = tailscale->getState();
-		if (tsEnabled) {
-			runSystemCommand("systemctl start tailscaled", "", nullptr);
-			runSystemCommand("tailscale up --timeout=7s", "", nullptr);
-			tsEnabled = IsTailscaleUp();
-		} else {
-			runSystemCommand("tailscale down", "", nullptr);
-			runSystemCommand("systemctl stop tailscaled", "", nullptr);
-		}
-		SystemConf::getInstance()->set("tailscale.up", tsEnabled ? "1" : "0");
-		SystemConf::getInstance()->saveSystemConf();
-	});
+//        auto enable_syncPspSaves = std::make_shared<SwitchComponent>(mWindow);
+//                bool syncPspSavesEnabled = SystemConf::getInstance()->get("baiducloud.syncPspSaves") == "1";
+//                enable_syncPspSaves->setState(syncPspSavesEnabled);
+//                s->addWithLabel(_("SYNC PSP SAVES"), enable_syncPspSaves);
+//				enable_syncPspSaves->setOnChangedCallback([enable_syncPspSaves] {
+//                bool syncPspSavesEnabled = enable_syncPspSaves->getState();
+//                SystemConf::getInstance()->set("baiducloud.syncPspSaves", syncPspSavesEnabled ? "1" : "0");
+//                                SystemConf::getInstance()->saveSystemConf();
+//                });
 
-	std::string tsUrl;
-	if ( tsUp == true) {
-		if (!IsTailscaleUp(&tsUrl) && !tsUrl.empty()) {
-			s->addGroup("TAILSCALE REAUTHENTICATE:");
-			s->addGroup(tsUrl);
-		}
-	}
+//        auto enable_syncSavesWhenClose = std::make_shared<SwitchComponent>(mWindow);
+//                bool syncSaveWhenCloseEnabled = SystemConf::getInstance()->get("baiducloud.syncSavesWhenClose") == "1";
+//                enable_syncSavesWhenClose->setState(syncSaveWhenCloseEnabled);
+//                s->addWithLabel(_("SYNC SAVES WHEN CLOSE"), enable_syncSavesWhenClose);
+//				enable_syncSavesWhenClose->setOnChangedCallback([enable_syncSavesWhenClose] {
+//                bool syncSaveWhenCloseEnabled = enable_syncSavesWhenClose->getState();
+//                SystemConf::getInstance()->set("baiducloud.syncSavesWhenClose", syncSaveWhenCloseEnabled ? "1" : "0");
+//                                SystemConf::getInstance()->saveSystemConf();
+//                });
 
-	auto zerotier = std::make_shared<SwitchComponent>(mWindow);
-	bool ztUp = SystemConf::getInstance()->get("zerotier.up") == "1";
-	zerotier->setState(ztUp);
-	s->addWithLabel(_("ZeroTier One"), zerotier);
-	zerotier->setOnChangedCallback([zerotier] {
-	bool ztEnabled = zerotier->getState();
-	    if(ztEnabled) {
-			runSystemCommand("systemctl start zerotier-one", "", nullptr);
-			ztEnabled = IsZeroTierUp();
-		} else {
-			runSystemCommand("systemctl stop zerotier-one", "", nullptr);
-		}
-		SystemConf::getInstance()->set("zerotier.up", ztEnabled ? "1" : "0");
-		SystemConf::getInstance()->saveSystemConf();
-	});
+//                auto decorations = std::make_shared<OptionListComponent<std::string> >(window, _("DECORATION SET"), false);
+		// SYSTEMS DISPLAYED
+		auto syncEnabledSystems = Utils::String::split(Settings::getInstance()->getString("SyncEnabledSystems"), ';');
+        auto availableSystems = Utils::String::split(Settings::getInstance()->getString("AvailableSystems"), ';');
+		auto displayedSystems = std::make_shared<OptionListComponent<std::string>>(mWindow, _("SYNC ENABLED SYSTEMS"), true);
+        for (auto system : availableSystems)
+        {
+            displayedSystems->add(system, system, std::find(syncEnabledSystems.cbegin(), syncEnabledSystems.cend(), system) != syncEnabledSystems.cend());
+        }
+		s->addWithLabel(_("SYNC ENABLED SYSTEMS"), displayedSystems);
+
+        s->addSaveFunc([displayedSystems]
+        {
+            std::string syncEnabledSystems;
+            std::vector<std::string> sys = displayedSystems->getSelectedObjects();
+            for (auto system : sys)
+            {
+                if (syncEnabledSystems.empty())
+                    syncEnabledSystems = system;
+                else
+                    syncEnabledSystems = syncEnabledSystems + ";" + system;
+            }
+            if (Settings::getInstance()->setString("SyncEnabledSystems", syncEnabledSystems))
+            {
+                Settings::getInstance()->saveFile();
+                SystemConf::getInstance()->set("baiducloud.syncEnabledSystems", syncEnabledSystems);
+                SystemConf::getInstance()->saveSystemConf();
+            }
+        });
+
+       	// auto mount_cloud = std::make_shared<SwitchComponent>(mWindow);
+        //         bool mntcloudEnabled = SystemConf::getInstance()->get("clouddrive.mounted") == "1";
+        //         mount_cloud->setState(mntcloudEnabled);
+        //         s->addWithLabel(_("MOUNT CLOUD DRIVE"), mount_cloud);
+        //         mount_cloud->setOnChangedCallback([mount_cloud] {
+        //                 if (mount_cloud->getState() == false) {
+        //                         runSystemCommand("rclonectl unmount", "", nullptr);
+        //                 } else {
+        //                         runSystemCommand("rclonectl mount", "", nullptr);
+        //                 }
+        //         bool cloudenabled = mount_cloud->getState();
+        //         SystemConf::getInstance()->set("clouddrive.mounted", cloudenabled ? "1" : "0");
+        //                         SystemConf::getInstance()->saveSystemConf();
+        //         });
+
+	// s->addGroup(_("VPN SERVICES"));
+
+	// const std::string wireguardConfigFile = "/storage/.config/wireguard/wg0.conf";
+	// if (Utils::FileSystem::exists(wireguardConfigFile)) {
+	// 	auto wireguard = std::make_shared<SwitchComponent>(mWindow);
+	// 	bool wgUp = SystemConf::getInstance()->get("wireguard.up") == "1";
+	// 	wireguard->setState(wgUp);
+	// 	s->addWithLabel(_("WIREGUARD VPN"), wireguard);
+	// 	wireguard->setOnChangedCallback([wireguard, wireguardConfigFile] {
+	// 		if (wireguard->getState() == false) {
+	// 			runSystemCommand("wg-quick down " + wireguardConfigFile, "", nullptr);
+	// 			runSystemCommand("systemctl stop connman-vpn", "", nullptr);
+	// 		} else {
+	// 			runSystemCommand("systemctl start connman-vpn", "", nullptr);
+	// 			runSystemCommand("wg-quick up " + wireguardConfigFile, "", nullptr);
+	// 		}
+	// 		SystemConf::getInstance()->set("wireguard.up", wireguard->getState() ? "1" : "0");
+	// 		SystemConf::getInstance()->saveSystemConf();
+	// 	});
+	// }
+
+	// auto tailscale = std::make_shared<SwitchComponent>(mWindow);
+	// bool tsUp = SystemConf::getInstance()->get("tailscale.up") == "1";
+	// tailscale->setState(tsUp);
+	// s->addWithLabel(_("TAILSCALE VPN"), tailscale);
+	// tailscale->setOnChangedCallback([tailscale] {
+  	// 	bool tsEnabled = tailscale->getState();
+	// 	if (tsEnabled) {
+	// 		runSystemCommand("systemctl start tailscaled", "", nullptr);
+	// 		runSystemCommand("tailscale up --timeout=7s", "", nullptr);
+	// 		tsEnabled = IsTailscaleUp();
+	// 	} else {
+	// 		runSystemCommand("tailscale down", "", nullptr);
+	// 		runSystemCommand("systemctl stop tailscaled", "", nullptr);
+	// 	}
+	// 	SystemConf::getInstance()->set("tailscale.up", tsEnabled ? "1" : "0");
+	// 	SystemConf::getInstance()->saveSystemConf();
+	// });
+
+	// std::string tsUrl;
+	// if ( tsUp == true) {
+	// 	if (!IsTailscaleUp(&tsUrl) && !tsUrl.empty()) {
+	// 		s->addGroup("TAILSCALE REAUTHENTICATE:");
+	// 		s->addGroup(tsUrl);
+	// 	}
+	// }
+
+	// auto zerotier = std::make_shared<SwitchComponent>(mWindow);
+	// bool ztUp = SystemConf::getInstance()->get("zerotier.up") == "1";
+	// zerotier->setState(ztUp);
+	// s->addWithLabel(_("ZeroTier One"), zerotier);
+	// zerotier->setOnChangedCallback([zerotier] {
+	// bool ztEnabled = zerotier->getState();
+	//     if(ztEnabled) {
+	// 		runSystemCommand("systemctl start zerotier-one", "", nullptr);
+	// 		ztEnabled = IsZeroTierUp();
+	// 	} else {
+	// 		runSystemCommand("systemctl stop zerotier-one", "", nullptr);
+	// 	}
+	// 	SystemConf::getInstance()->set("zerotier.up", ztEnabled ? "1" : "0");
+	// 	SystemConf::getInstance()->saveSystemConf();
+	// });
 
 	mWindow->pushGui(s);
 }
@@ -4068,6 +4189,11 @@ void GuiMenu::openQuitMenu_batocera()
 
 void GuiMenu::openQuitMenu_batocera_static(Window *window, bool quickAccessMenu, bool animate)
 {
+    openQuitMenu_batocera_static_with_selected(window, quickAccessMenu, animate, false);
+}
+
+void GuiMenu::openQuitMenu_batocera_static_with_selected(Window *window, bool quickAccessMenu, bool animate, bool selectPauseEntry)
+{
 	auto s = new GuiSettings(window, (quickAccessMenu ? _("QUICK ACCESS") : _("QUIT")).c_str());
 	s->setCloseButton("select");
 
@@ -4088,6 +4214,27 @@ void GuiMenu::openQuitMenu_batocera_static(Window *window, bool quickAccessMenu,
 					delete s;
 					openQuitMenu_batocera_static(w, true, false);
 				}, "iconSound");
+
+                if (AudioManager::getInstance()->isMusicPaused())
+                {
+                    s->addEntry(_("RESUME BGM"), false, [s, window]
+                    {
+                        Window* w = window;
+                        AudioManager::getInstance()->resumeMusic();
+                        delete s;
+                        openQuitMenu_batocera_static_with_selected(w, true, false, true);
+                    }, "iconSound", false, selectPauseEntry);
+                }
+                else
+                {
+                    s->addEntry(_("PAUSE BGM"), false, [s, window]
+                    {
+                        Window* w = window;
+                        AudioManager::getInstance()->pauseMusic();
+                        delete s;
+                        openQuitMenu_batocera_static_with_selected(w, true, false, true);
+                    }, "iconSound", false, selectPauseEntry);
+                }
 			}
 		}
 
@@ -4113,6 +4260,38 @@ void GuiMenu::openQuitMenu_batocera_static(Window *window, bool quickAccessMenu,
 				delete s;
 			}, "iconManual");
 		}
+
+        if (!SystemConf::getInstance()->get("global.bootgame.path").empty())
+        {
+            s->addGroup(_("SYSTEM"));
+
+            auto theme = ThemeData::getMenuTheme();
+            std::shared_ptr<Font> font = theme->Text.font;
+            unsigned int color = theme->Text.color;
+
+            std::string gameData = SystemConf::getInstance()->get("global.bootgame.data");
+            char trstring[128];
+            snprintf(trstring, 128, std::string(_("%s")).c_str(), gameData.c_str());
+            auto space = std::make_shared<TextComponent>(window,
+                    trstring,
+                    font,
+                    color);
+            s->addWithLabel(_("CURRENT STARTUP"), space);
+
+            s->addEntry(_("CANCEL BOOT TO THIS GAME"), false, [s, window] {
+                Window* w = window;
+                std::string gameData = SystemConf::getInstance()->get("global.bootgame.data");
+                SystemConf::getInstance()->set("global.bootgame.path", "");
+                SystemConf::getInstance()->set("global.bootgame.cmd", "");
+                SystemConf::getInstance()->set("global.bootgame.data", "");
+                SystemConf::getInstance()->saveSystemConf();
+                delete s;
+                char trstring[1024];
+                snprintf(trstring, 1024, std::string(_("CANCEL LAUNCH %s WHEN BOOT")).c_str(), gameData.c_str());
+                w->displayNotificationMessage(trstring, 4000);
+//                openQuitMenu_batocera_static(w, true, false);
+            }, "iconRestart");
+        }
 	}
 
 	if (quickAccessMenu)
