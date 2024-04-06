@@ -38,7 +38,7 @@ msgid "INDEXING COMPLETED"
 msgstr "索引完成"
 
 msgid "GAME HASHING IS RUNNING. DO YOU WANT TO STOP IT?"
-msgstr "正在效验游戏.你想停止吗?"
+msgstr "正在效验游戏，你想停止吗?"
 
 msgid "YES"
 msgstr "是"
@@ -1836,7 +1836,7 @@ msgid "SAVES CONFIGUREATION"
 msgstr "保存配置文件"
 
 msgid "AUTO SAVE/LOAD ON GAME LAUNCH"
-msgstr "启动时自动加载且关闭时自动保存"
+msgstr "启动时加载且关闭时保存"
 
 msgid "OFF"
 msgstr "关"
@@ -2274,10 +2274,10 @@ msgid "SONG TITLE DISPLAY DURATION"
 msgstr "歌曲的秒数"
 
 msgid "ONLY PLAY SYSTEM-SPECIFIC MUSIC FOLDER"
-msgstr "仅播放指定游戏平台中的音乐"
+msgstr "仅播放当前系统主题音乐"
 
 msgid "PLAY SYSTEM-SPECIFIC MUSIC"
-msgstr "播放主题音乐"
+msgstr "播放系统主题音乐"
 
 msgid "LOWER MUSIC WHEN PLAYING VIDEO"
 msgstr "播放视频时降低音乐音量"
@@ -2364,7 +2364,7 @@ msgid "ENABLE SIMPLE HTTP SERVER"
 msgstr "开启简单 HTTP 服务器"
 
 msgid "USB GADGET FUNCTION"
-msgstr "USB 组件功能"
+msgstr "USB 连接模式"
 
 msgid "DISABLED"
 msgstr "禁用"
@@ -2400,7 +2400,7 @@ msgid "SKIP TO NEXT SONG"
 msgstr "切换到下一首"
 
 msgid "LISTENING NOW"
-msgstr "开始聆听"
+msgstr "正在播放"
 
 msgid "RESUME BGM"
 msgstr "恢复背景音乐"
