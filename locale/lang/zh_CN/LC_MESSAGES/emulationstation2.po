@@ -2271,7 +2271,7 @@ msgid "DISPLAY SONG TITLES"
 msgstr "显示歌曲名称"
 
 msgid "SONG TITLE DISPLAY DURATION"
-msgstr "歌曲的秒数"
+msgstr "显示歌曲名称的时间（秒）"
 
 msgid "ONLY PLAY SYSTEM-SPECIFIC MUSIC FOLDER"
 msgstr "仅播放当前系统主题音乐"
